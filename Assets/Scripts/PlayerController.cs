@@ -11,21 +11,23 @@ using System.Collections;
 /*					LoseComposure()														*/
 /*					GainComposure()														*/
 /*					LowerSelfImage()													*/
+/*					InitiateConversation()												*/
 /*					GoToRestroom()														*/
 /*					PlayWithFood()														*/
 /*					EatFood()															*/
 /*					Update()															*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
-
 public class PlayerController : MonoBehaviour 
 {
 
 	//	Public Variables
+	public bool isTalking;
 	public float playerComposure;
 	public float playerSelfImage;
 	public Slider playerComposureBar;
 	public Slider playerSelfImageBar;
+	public GameObject[] friends;
 
 	//	Private Variables
 	[SerializeField] private float m_StartingComposure;
@@ -46,6 +48,8 @@ public class PlayerController : MonoBehaviour
 		//	These sliders are for debugging purposes only. They will not be in the release version of the game.
 		playerComposureBar = GameObject.Find ("Composure Slider").GetComponent<Slider> ();
 		playerSelfImageBar = GameObject.Find ("Self Image Slider").GetComponent<Slider> ();
+
+		friends = GameObject.FindGameObjectsWithTag ("Friend");
 	
 	}
 
@@ -84,12 +88,23 @@ public class PlayerController : MonoBehaviour
 
 /*--------------------------------------------------------------------------------------*/
 /*																						*/
+/*	InitiateConversation:																*/
+/*																						*/
+/*																						*/
+/*--------------------------------------------------------------------------------------*/	
+	void InitiateConversation()
+	{
+		//	click spam stuff goes here
+	}
+
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
 /*	GoToRestroom: 																		*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
 	void GoToRestroom()
 	{
-		
+		//	the pause screen
 	}
 
 /*--------------------------------------------------------------------------------------*/
@@ -99,7 +114,7 @@ public class PlayerController : MonoBehaviour
 /*--------------------------------------------------------------------------------------*/	
 	void PlayWithFood()
 	{
-
+		//	Lowers suspicion initally but after x number of times raises suspicion
 	}
 
 /*--------------------------------------------------------------------------------------*/
@@ -109,6 +124,10 @@ public class PlayerController : MonoBehaviour
 /*--------------------------------------------------------------------------------------*/	
 	void EatFood()
 	{
+		for (int i = 0; i < friends.Length; i++)
+		{
+			friends [i].SendMessage ("LowerSuspicion");
+		}
 		LowerSelfImage ();
 	}
 
