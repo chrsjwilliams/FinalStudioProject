@@ -9,4 +9,5 @@ In this game we attempt to respectfully explore the inner state of a person livi
 disorder as they go to dinner with a group of folks close to them.
 
 **UPDATE**
+
 Currently implementing conversation click spam logic.
