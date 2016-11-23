@@ -21,17 +21,17 @@ using System.Collections;
 public class PlayerController : MonoBehaviour 
 {
 
-	//	Public Variables
-	public bool isTalking;
-	public float playerComposure;
-	public float playerSelfImage;
-	public Slider playerComposureBar;
-	public Slider playerSelfImageBar;
-	public GameObject[] friends;
+	//	Public Variables							
+	public bool isTalking;									//	Indicates if player is talking (Might use this)
+	public float playerComposure;							//	Reference to player's current composure level
+	public float playerSelfImage;							//	Reference to player's current self image
+	public Slider playerComposureBar;						//	Reference to player's composure bar [Debugging purposes]
+	public Slider playerSelfImageBar;						//	Reference to player's self image bar [Debuggins purposes]
+	public GameObject[] friends;							//	Reference to all friend in the scene
 
 	//	Private Variables
-	[SerializeField] private float m_StartingComposure;
-	[SerializeField] private float m_StartingSelfImage;
+	[SerializeField] private float m_StartingComposure;		//	Starting composure level
+	[SerializeField] private float m_StartingSelfImage;		// Starting self image level
 
 /*--------------------------------------------------------------------------------------*/
 /*																						*/
@@ -40,6 +40,7 @@ public class PlayerController : MonoBehaviour
 /*--------------------------------------------------------------------------------------*/	
 	void Start () 
 	{
+		//	Sets starting composure and self image levels
 		m_StartingComposure = 10f;
 		m_StartingSelfImage = 10f;
 		playerComposure = m_StartingComposure;
@@ -49,8 +50,8 @@ public class PlayerController : MonoBehaviour
 		playerComposureBar = GameObject.Find ("Composure Slider").GetComponent<Slider> ();
 		playerSelfImageBar = GameObject.Find ("Self Image Slider").GetComponent<Slider> ();
 
+		//	Finds friends and puts them in an array
 		friends = GameObject.FindGameObjectsWithTag ("Friend");
-	
 	}
 
 /*--------------------------------------------------------------------------------------*/
@@ -84,17 +85,6 @@ public class PlayerController : MonoBehaviour
 	{
 		playerSelfImage--;
 		playerSelfImageBar.value = playerSelfImage;
-	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	InitiateConversation:																*/
-/*																						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
-	void InitiateConversation()
-	{
-		//	click spam stuff goes here
 	}
 
 /*--------------------------------------------------------------------------------------*/
