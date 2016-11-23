@@ -10,4 +10,4 @@ disorder as they go to dinner with a group of folks close to them.
 
 **UPDATE**
 
-Currently implementing conversation click spam logic.
+A working prototype is ready to be downloaded. Next Step is implementing the other conversations
