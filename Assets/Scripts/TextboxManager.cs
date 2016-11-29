@@ -6,7 +6,11 @@ using System.Collections;
  * 
  * 		TODO:	Come up with name of game
  * 				Find better variable names and be consistent with them
+ * 				Paritcle effect when certain words at sus lvl 3 and 4 appear
+ * 				Bathroom via phone button
  * 				Implement some visual fx
+ * 				After dessert one last stop at the restroom
+ * 				Organize variables
  * 
  */ 
 
@@ -33,8 +37,10 @@ public class TextboxManager : MonoBehaviour
 	public GameObject panel;							//	Reference to Panel
 	public UnityEngine.UI.Text theText;					//	Reference to text in text box
 	public TextAsset textFile;							//	The file where the dialogue comes from
+	public string currentTextLine;						//	Current line in a string
+	private string currentWord = "";					//	Current word on currentTextLine
 	public string[] textLines;							//	Lines of text in the textFile
-
+	public float letterPause = 0.075f;					//	Pause to draw each letter
 	public int currentLine;								//	Line of text being displayed
 	public int endAtLine;								//	Last line of text file
 
@@ -94,10 +100,42 @@ public class TextboxManager : MonoBehaviour
 /*--------------------------------------------------------------------------------------*/
 	IEnumerator DiableInputTimer(float seconds)
 	{
+		m_FriendReference.GetComponent<Button> ().enabled = false;
 		disableInput = true;
 		yield return new WaitForSeconds (seconds);
+		m_FriendReference.GetComponent<Button> ().enabled = true;
 		disableInput = false;
 
+	}
+
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
+/*	TypeText: Types texts word by word													*/
+/*		param: string compareWord - the current line of text							*/
+/*																						*/
+/*--------------------------------------------------------------------------------------*/
+	private IEnumerator TypeText (string compareWord)
+	{
+		//	Disables Input to give players time to read each line and prevent them from just skipping through
+		StartCoroutine (DiableInputTimer(1.5f));
+		//	Splits the line into words at the ' ' character
+		string[] displayThis = compareWord.Split (' ');
+
+		for(int i = 0; i < displayThis.Length; i++)
+		{
+			//	If words are the same leave the IEnumerator
+			if (currentTextLine != compareWord)
+				break;
+			
+			//	Adds current word to the text line
+			currentWord = " " + displayThis [i];
+
+			//	Displays text on screen
+			theText.text = theText.text + currentWord;
+
+			//	Pause between each word
+			yield return new WaitForSeconds (letterPause);
+		}  
 	}
 
 /*--------------------------------------------------------------------------------------*/
@@ -238,7 +276,7 @@ public class TextboxManager : MonoBehaviour
 					//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
 					if (currentLine == 8)
 					{
-						StartCoroutine (DiableInputTimer (1.5f));
+						StartCoroutine (DiableInputTimer (5f));
 					}
 
 					//	This is here to make the dialouge flow smoothly after failure and success states
@@ -269,7 +307,7 @@ public class TextboxManager : MonoBehaviour
 					//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
 					if (currentLine == 22)
 					{
-						StartCoroutine (DiableInputTimer (1.5f));
+						StartCoroutine (DiableInputTimer (5f));
 					}
 
 					//	This is here to make the dialouge flow smoothly after failure and success states
@@ -337,6 +375,14 @@ public class TextboxManager : MonoBehaviour
 				endAtLine = textLines.Length - 1;
 			}
 		}
+
+		//	Emptys the text panel after each block of text
+		theText.text = "";
+
+		//	Displays text on the panel
+		currentTextLine = textLines [currentLine];
+		//	Seprates text line word by word
+		StartCoroutine (TypeText (currentTextLine));
 	}
 
 
@@ -347,9 +393,6 @@ public class TextboxManager : MonoBehaviour
 ///*--------------------------------------------------------------------------------------*/
 	void Update()
 	{
-		//	Displays text on current line
-		theText.text = textLines [currentLine];
-
 		//	If input is disabled we cannot click forwards
 		if (!disableInput) 
 		{
