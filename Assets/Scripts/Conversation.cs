@@ -107,19 +107,19 @@ public class Conversation : MonoBehaviour
 		if (startSlider) 
 		{
 			//	The lower the composer the more difficult it is to steer a conversation
-			if (player.playerComposure > 8) 
+			if (player.playerComposure > 4) 
 			{
 				m_ComfortLevel = m_ComfortLevel - decrement;
 				comfortLevel = m_ComfortLevel;
 				conversationSteerer.value = comfortLevel;
 			} 
-			else if (player.playerComposure > 5) 
+			else if (player.playerComposure > 3) 
 			{
 				m_ComfortLevel = m_ComfortLevel - (decrement * 1.4f);
 				comfortLevel = m_ComfortLevel;
 				conversationSteerer.value = comfortLevel;
 			} 
-			else if (player.playerComposure > 3) 
+			else if (player.playerComposure > 2) 
 			{
 				m_ComfortLevel = m_ComfortLevel - (decrement * 2.0f);
 				comfortLevel = m_ComfortLevel;

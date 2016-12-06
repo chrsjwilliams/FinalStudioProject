@@ -41,7 +41,7 @@ public class PlayerController : MonoBehaviour
 	void Start () 
 	{
 		//	Sets starting composure and self image levels
-		m_StartingComposure = 10f;
+		m_StartingComposure = 5f;
 		m_StartingSelfImage = 10f;
 		playerComposure = m_StartingComposure;
 		playerSelfImage = m_StartingSelfImage;
@@ -59,7 +59,7 @@ public class PlayerController : MonoBehaviour
 /*	LoseComposure: 																		*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
-	void LoseComposure()
+	public void LoseComposure()
 	{
 		playerComposure--;
 		playerComposureBar.value = playerComposure;
@@ -70,7 +70,7 @@ public class PlayerController : MonoBehaviour
 /*	GainComposure: 																		*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
-	void GainComposure()
+	public void GainComposure()
 	{
 		playerComposure++;
 		playerComposureBar.value = playerComposure;
@@ -81,46 +81,12 @@ public class PlayerController : MonoBehaviour
 /*	LowerSelfImage: 																	*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
-	void LowerSelfImage()
+	public void LowerSelfImage()
 	{
 		playerSelfImage--;
 		playerSelfImageBar.value = playerSelfImage;
 	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	GoToRestroom: 																		*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
-	void GoToRestroom()
-	{
-		//	the pause screen
-	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	PlayWithFood: 																		*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
-	void PlayWithFood()
-	{
-		//	Lowers suspicion initally but after x number of times raises suspicion
-	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	EatFood: 																			*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
-	void EatFood()
-	{
-		for (int i = 0; i < friends.Length; i++)
-		{
-			friends [i].SendMessage ("LowerSuspicion");
-		}
-		LowerSelfImage ();
-	}
-
+		
 /*--------------------------------------------------------------------------------------*/
 /*																						*/
 /*	Update: Called once per frame														*/

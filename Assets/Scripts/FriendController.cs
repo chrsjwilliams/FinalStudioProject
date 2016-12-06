@@ -18,12 +18,16 @@ using System.Collections;
 public class FriendController : MonoBehaviour 
 {
 	//	Public Variables
+	public bool talkingToPlayer;							//	Keeps friend highlihgted
 	public string friendName;								//	Stores string containing Friend's name
 	public float suspicionLevel;							//	Public reference to friend's suspicion level
 	public bool [] conversationCheck;						//	Logic gates to prevent the same conversation happening twice
 	public TextboxManager textbox;							//	Reference to the Textbox Manager (This is where the conversation is)
 	public CanvasGroup textpanel;							//	Reference to canvas group to hide textbox when not in use
 	public Slider suspicionBar;								//	Suspicion bar for debug purposes
+	public Button button;									//	Reference to friend's button
+	public ColorBlock buttonColor;							//	Highlights the friend being spoken to
+	public Color friendIndicator;							//	The color of the highlighted friend
 	public GameObject player;								//	Friend's reference to the player
 
 	//	Private Variables
@@ -36,6 +40,8 @@ public class FriendController : MonoBehaviour
 /*--------------------------------------------------------------------------------------*/	
 	void Start () 
 	{
+		talkingToPlayer = false;
+
 		//	Ready to do the first conversation
 		conversationCheck = new bool[] { true, false, false, false, false };
 
@@ -53,6 +59,13 @@ public class FriendController : MonoBehaviour
 
 		//	Find slider for debug purposes
 		suspicionBar = GameObject.Find ("Suspicion Level").GetComponent<Slider> ();
+
+		friendIndicator = new Color (0.65f, 0.93f, 1.0f);
+
+		button = GetComponent<Button> ();
+
+
+
 
 		//	Sets suspicion to 0. This is suspicion level 1
 		m_SuspicionLevel = 0;
@@ -80,7 +93,7 @@ public class FriendController : MonoBehaviour
 /*	LowerSuspicion:	Raises friend's suspicion (3 to 0)	level 4 to 	1					*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
-	void LowerSuspicion()
+	public void LowerSuspicion()
 	{
 		m_SuspicionLevel--;
 		suspicionLevel = m_SuspicionLevel;
@@ -98,11 +111,6 @@ public class FriendController : MonoBehaviour
 	{
 		//	Loads file appropriate for this friend's name and susupicion level
 		textbox.LoadAndRunConversationWith (this);
-
-		//	Makes text panel visible
-		textpanel.alpha = 1f;
-		textpanel.blocksRaycasts = true;
-
 	}
 
 /*--------------------------------------------------------------------------------------*/
@@ -112,6 +120,11 @@ public class FriendController : MonoBehaviour
 ///*--------------------------------------------------------------------------------------*/
 	void Update () 
 	{
-	
+		if (talkingToPlayer)
+		{
+			buttonColor = button.colors;
+			buttonColor.normalColor = friendIndicator;
+			button.colors = buttonColor;
+		}
 	}
 }

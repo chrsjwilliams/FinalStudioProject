@@ -1,249 +1,145 @@
-﻿//CAT ROOMMATE by m@ boch - NYU GAMECENTER - Oct 2016
-
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; //We're using generic collections, specifically List<string>, so we have to add this directive
-using UnityEngine.SceneManagement;
 
-
-
-
-
-public class GameManager : MonoBehaviour
-
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
+/*	GameManager: Manages the state of the game and progresses player through game		*/
+/*					  																	*/
+/*																						*/
+/*			Functions:																	*/
+/*					Start()																*/
+/*					DisableInputTimer()													*/
+/*					Update()															*/
+/*																						*/
+/*--------------------------------------------------------------------------------------*/
+public class GameManager : MonoBehaviour 
 {
-    //public variables like this one are accessible to other scripts, and often set in the inspector
-    //they're great for tunable variables because we can change them while the game is running
-    //sometimes it's just easier to set a reference to another object by dragging it into a public variable in the inspector
-    public TextMesh QuestionTextMesh; //Text Meshes for Questions & Answers
-    public TextMesh Answer1TextMesh;
-    public TextMesh Answer2TextMesh;
+	public int conversationCount;
+	public int restroomVisitCount;
+	public bool togglRestroomDialouge;
+	private bool m_DisableInput;
+	public bool m_VisitingRestroom;
+	private TextboxManager m_TextboxManager;
+	public GameObject m_RestroomScreen;
+	[SerializeField]
+	private PlayerController m_Player;
+	public FoodManager foodManager;
+	public GameObject[] m_Friends;
+	private Vector3 m_Hide;								//	Hides conversation steering slider
+	private Vector3 m_RestroomScale;
 
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
+/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
+/*																						*/
+/*--------------------------------------------------------------------------------------*/
+	void Start () 
+	{
+		restroomVisitCount = 0;
+		m_VisitingRestroom = false;
+		togglRestroomDialouge = false;
+		conversationCount = 0;
+		m_Hide = new Vector3 (0, 0, 0);
+		m_RestroomScale = new Vector3 (4.343573f, 4.34357f, 4.34357f);
+	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	DisableInputTime: Disables input for x seconds										*/
+	/*		param: float seconds - how many seconds the function waits for 					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
+	IEnumerator DisableInputTimer(float seconds)
+	{
+		m_DisableInput = true;
+		yield return new WaitForSeconds (seconds);
+		m_DisableInput = false;
 
-    public SpriteRenderer CatSpriteRenderer; //Sprite Renderer
+	}
 
-    public Sprite CatNormal; //Cat Emoji Sprites
-    public Sprite CatHappy;
-    public Sprite CatJoy;
-    public Sprite CatExcited;
-    public Sprite CatLove;
-    public Sprite CatTricky;
-    public Sprite CatKissy;
-    public Sprite CatCoy;
-    public Sprite CatMad;
-    public Sprite CatSad;
-    public Sprite CatAgony;
-    public Sprite CatSleepy;
+	public void ToggleRestroom()
+	{
+		m_VisitingRestroom = !m_VisitingRestroom;
+		if (m_VisitingRestroom)
+		{
+			restroomVisitCount++;
+		}
 
-    public List<string> Questions; //Lists for Questions & Answers
-    public List<string> Answers1;
-    public List<string> Answers2;
+		if (!m_VisitingRestroom && restroomVisitCount > 3)
+		{
+			togglRestroomDialouge = true;
+		}
+	}
 
-    //private variables have to be set in code, like Phaser's global variables
-    private int currentQuestion; //Keep track of which questions
-    private int goodAnswers; //Count Good Answers
-    private int badAnswers; //Count Bad Answers
-
-	bool readyToLoadNextScene;
-
-    // Use this for initialization
-    void Start ()
-    {
-		readyToLoadNextScene = false;
-        //annoyingly, you can't make linebreaks in the unity editor
-        //so here we're just goint through all the strings in Questions
-        //and wherever we see "BREAK" we're replacing it with \n
-        //which is then read as a line break
-        int i = 0; 
-        foreach (string s in Questions)
-        {
-            Questions[i] = s.Replace("BREAK", "\r\n");
-            i++;
-        }
-
-        currentQuestion = 0; //set current question to 0
-        QuestionTextMesh.text = Questions[currentQuestion]; //set the starting values for question text mesh
-        Answer1TextMesh.text = Answers1[currentQuestion]; //set the starting values for answer1 text mesh
-        Answer2TextMesh.text = Answers2[currentQuestion]; //set the starting values for answer2 text mesh
-    }
-
-
-
-		
-
-
-    //OnMouseDown is sent so long as an object has a collider on it
-
-
-    void OnMouseDown()
-    {
-		
-		
-        Debug.Log("User clicked at: " + Input.mousePosition); //logging the click position to the unity console
-
-		if (currentQuestion >= 10) { //Now all questions answered, so it's time to give a result.
-				if (Input.GetMouseButtonDown (0)) {
-				if (readyToLoadNextScene == true){  //assuming you have a global variable with this name
-					SceneManager.LoadScene ("Third");
-				}
-				else if (currentQuestion >= 10){
-					readyToLoadNextScene = true;
-				}
-			}
-			
-			Answer1TextMesh.text = ""; //set answer to blank
-			Answer2TextMesh.text = ""; //set answer to blank
-			if (goodAnswers > badAnswers) { //if more good answers than bad
-				QuestionTextMesh.text = "i'll take care of you"; //Cat wants to live with you
-				CatSpriteRenderer.sprite = CatHappy; //Set cat sprite
-				}
+	public void LeaveDinner()
+	{
+		Application.LoadLevel ("EndQuote");
+	}
 	
-			else
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
+/*	Update: Called once per frame (Will be used for visual fx)							*/
+/*																						*/
+///*--------------------------------------------------------------------------------------*/
+	void Update () 
+	{
+		if (Application.loadedLevelName == "SplashScreen" && Input.GetMouseButtonDown(0))
+		{
+			Application.LoadLevel ("BeginQuote");
+			StartCoroutine (DisableInputTimer(3.0f));
+		}
+		if (Application.loadedLevelName == "BeginQuote" && Input.GetMouseButtonDown(0))
+		{
+			Application.LoadLevel ("Dinner");
+			StartCoroutine (DisableInputTimer(3.0f));
+		}
+		if (Application.loadedLevelName == "Dinner")
+		{
+			m_RestroomScreen = GameObject.FindGameObjectWithTag ("Restroom");
+			m_TextboxManager = GameObject.FindGameObjectWithTag ("TextManager").GetComponent<TextboxManager>();
+			foodManager = GameObject.FindGameObjectWithTag ("Menu").GetComponent<FoodManager> ();
+			m_Player = GameObject.FindGameObjectWithTag ("Player").GetComponent<PlayerController>();
+			m_Friends = GameObject.FindGameObjectsWithTag ("Friend");
+
+
+		}
+
+		if (m_RestroomScreen != null) 
+		{
+			if (m_VisitingRestroom) 
 			{
-				QuestionTextMesh.text = "i'll take care of you "; //Cat can't live with you
-				CatSpriteRenderer.sprite = CatCoy; //Set cat sprite
+				m_RestroomScreen.transform.localScale = m_RestroomScale;
+			} 
+			else 
+			{
+				m_RestroomScreen.transform.localScale = m_Hide;	
 			}
 		}
 
+		if (conversationCount > 8)
+		{
+			Application.LoadLevel ("EndQuote");
+		}
+		else if (conversationCount > 5)
+		{
+			//	show what player ordered
+			//	Bring out entrees
+		}
+		else if (conversationCount > 2)
+		{
+			//	show what player ordered
+			//	BRing out desserts
+		}
+		else if (conversationCount > 0)
+		{
+			
+		}
 
-            
-        else //otherwise, we need to keep updating answers & questions
-        {
-            //Answer is Left Answer, as the mouse was on the negative side of the x axis when clicked
-			if (Input.mousePosition.x < Screen.width/2)
-            {
-                //all of these are the same, we set a new cat sprite, then add one to goodAnswers or badAnswers accordingly
-                if (currentQuestion == 0)
-                {
-                    CatSpriteRenderer.sprite = CatExcited; //set the cat sprite
-                    goodAnswers++; //add one to good answers
-                }
-                else if (currentQuestion == 1)
-                {
-                    CatSpriteRenderer.sprite = CatJoy;
-                    goodAnswers++;
-                }
-                else if (currentQuestion == 2)
-                {
-                    CatSpriteRenderer.sprite = CatMad;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 3)
-                {
-                    CatSpriteRenderer.sprite = CatSad;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 4)
-                {
-                    CatSpriteRenderer.sprite = CatSleepy;
-                    goodAnswers++;
-                }
-                else if (currentQuestion == 5)
-                {
-                    CatSpriteRenderer.sprite = CatLove;
-                    goodAnswers++;
-                }
-                else if (currentQuestion == 6)
-                {
-                    CatSpriteRenderer.sprite = CatKissy;
-                    goodAnswers++;
-                }
-				else if (currentQuestion == 7)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					goodAnswers++;
-				}
-				else if (currentQuestion == 8)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					goodAnswers++;
-				}
-				else if (currentQuestion == 9)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					goodAnswers++;
-				}
-				else if (currentQuestion == 10)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					goodAnswers++;
-				}
-            }
-            //Answer is Left Answer, as the mouse was on the positive side of the x axis when clicked
-			else if (Input.mousePosition.x >= Screen.width/2)
-            {
-                //all of these are the same, we set a new cat sprite, then add one to goodAnswers or badAnswers accordingly
-                if (currentQuestion == 0)
-                {
-                    CatSpriteRenderer.sprite = CatSleepy; //set the cat sprite
-                    badAnswers++; //add one to good answers
-                }
-                if (currentQuestion == 1)
-                {
-                    CatSpriteRenderer.sprite = CatNormal;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 2)
-                {
-                    CatSpriteRenderer.sprite = CatJoy;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 3)
-                {
-                    CatSpriteRenderer.sprite = CatTricky;
-                    goodAnswers++;
-                }
-                else if (currentQuestion == 4)
-                {
-                    CatSpriteRenderer.sprite = CatJoy;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 5)
-                {
-                    CatSpriteRenderer.sprite = CatAgony;
-                    badAnswers++;
-                }
-                else if (currentQuestion == 6)
-                {
-                    CatSpriteRenderer.sprite = CatMad;
-                    badAnswers++;
-                }
-				else if (currentQuestion == 7)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					badAnswers++;
-				}
-				else if (currentQuestion == 8)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					badAnswers++;
-				}
-				else if (currentQuestion == 9)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					badAnswers++;
-				}
-				else if (currentQuestion == 10)
-				{
-					CatSpriteRenderer.sprite = CatJoy;
-					badAnswers++;
-				}
-
-
-            }
-				
-		
-            currentQuestion++; //moving on to the next question
-            QuestionTextMesh.text = Questions[currentQuestion]; //setting the text mesh to the next question
-            Answer1TextMesh.text = Answers1[currentQuestion]; //setting the text mesh to the next answer
-            Answer2TextMesh.text = Answers2[currentQuestion]; //setting the text mesh to the next answer
-        }
-
-    }
+		if (Application.loadedLevelName == "EndQuote" && Input.GetMouseButtonDown(0))
+		{
+			Application.LoadLevel ("SplashScreen");
+			StartCoroutine (DisableInputTimer(3.0f));
+			conversationCount = 0;
+		}
+	}
 }
-
-
-
-		
-
