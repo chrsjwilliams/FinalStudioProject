@@ -48,12 +48,7 @@ public class ParticleSystemOrder : MonoBehaviour {
 		else
 		{
 			GetComponent<ParticleSystem> ().Play ();
-			if (tag == "Self")
-			{
-				startLife = 2 * (startLife / player.playerSelfImage);
 
-				GetComponent<ParticleSystem> ().startLifetime = startLife;
-			}
 		}
 	}
 }
