@@ -39,7 +39,7 @@ public class ParticleSystemOrder : MonoBehaviour {
 		}
 		else if (transform.parent != null)
 		{
-			if (GetComponentInParent<FriendController>().suspicionLevel > 2)
+			if (GetComponentInParent<FriendController>().suspicionLevel < 2)
 			{
 				Debug.Log ("Here");
 				GetComponent<ParticleSystem> ().Stop ();
