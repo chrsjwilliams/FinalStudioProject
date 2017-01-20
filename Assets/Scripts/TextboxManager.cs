@@ -132,7 +132,6 @@ public class TextboxManager : MonoBehaviour
 			m_FriendReference.GetComponent<Button> ().enabled = true;
 		}
 		disableInput = false;
-
 	}
 
 	/*--------------------------------------------------------------------------------------*/
