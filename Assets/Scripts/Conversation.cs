@@ -2,22 +2,22 @@
 using UnityEngine.UI;
 using System.Collections;
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Conversation:	 																	*/
-/*																						*/
-/*			Functions:																	*/
-/*					Start()																*/
-/*					SetComfortLevel(float newComfortLevel)								*/
-/*					Update()															*/
-/*					FixedUpdate()														*/
-/*																						*/
-/*					Why use both Update and FixedUpdate?								*/
-/*																						*/
-/*					This is the easiest way I thought to implement the opposite			*/
+///*--------------------------------------------------------------------------------------*/
+///*																						*/
+///*	Conversation:	 																	*/
+///*																						*/
+///*			Functions:																	*/
+///*					Start()																*/
+///*					SetComfortLevel(float newComfortLevel)								*/
+///*					Update()															*/
+///*					FixedUpdate()														*/
+///*																						*/
+///*					Why use both Update and FixedUpdate?								*/
+///*																						*/
+///*					This is the easiest way I thought to implement the opposite			*/
 ///*					movements that change at different time intervals.					*/																	*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+///*																						*/
+///*--------------------------------------------------------------------------------------*/
 public class Conversation : MonoBehaviour 
 {
 	//	Public Variables
@@ -115,19 +115,19 @@ public class Conversation : MonoBehaviour
 			} 
 			else if (player.playerComposure > 3) 
 			{
-				m_ComfortLevel = m_ComfortLevel - (decrement * 1.4f);
+				m_ComfortLevel = m_ComfortLevel - (decrement * 1.1f);
 				comfortLevel = m_ComfortLevel;
 				conversationSteerer.value = comfortLevel;
 			} 
 			else if (player.playerComposure > 2) 
 			{
-				m_ComfortLevel = m_ComfortLevel - (decrement * 2.0f);
+				m_ComfortLevel = m_ComfortLevel - (decrement * 1.3f);
 				comfortLevel = m_ComfortLevel;
 				conversationSteerer.value = comfortLevel;
 			} 
-			else if (player.playerComposure > 1) 
+			else
 			{
-				m_ComfortLevel = m_ComfortLevel - (decrement * 2.4f);
+				m_ComfortLevel = m_ComfortLevel - (decrement * 1.5f);
 				comfortLevel = m_ComfortLevel;
 				conversationSteerer.value = comfortLevel;
 			}

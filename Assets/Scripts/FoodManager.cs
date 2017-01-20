@@ -9,36 +9,40 @@ using System.Collections;
 /*																						*/
 /*			Functions:																	*/
 /*					Start()																*/
-/*					DisableInputTimer()													*/
-/*					Update()															*/
+/*					Ordered (GameObject menuItem)										*/
+/*					FinihsedOrdering ()													*/
+/*					SetFoodImages (string food)											*/
+/*					SetDrinkImages (string drink)										*/
+/*					Update ()															*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/
 public class FoodManager : MonoBehaviour 
 {
-	public bool finishedOrdering;
-	public string[] dinnerOrder;
-	public GameObject item;
-	public GameObject[] drinkItems;
-	public GameObject[] appItems;
-	public GameObject[] entreeItems;
-	public GameObject[] dessertItems;
-	public Image menu;
-	public Image yourOrder;
-	public Image yourDrink;
-	public PlayerController player;
+	//	Public Variables
+	public bool finishedOrdering;			//	Comunicates to game player is done ordering
+	public string[] dinnerOrder;			//	Stores the names of the items the player has ordered
+	public GameObject item;					//	The current item
+	public GameObject[] drinkItems;			//	Array of all dirnk items
+	public GameObject[] appItems;			//	Array of all appetizer items
+	public GameObject[] entreeItems;		//	Array of all entree items
+	public GameObject[] dessertItems;		//	Array of all dessert items
+	public Image menu;						//	Image of the menu
+	public Image yourOrder;					//	The image of the food items you ordered
+	public Image yourDrink;					//	The image of the drink item you ordered
+	public PlayerController player;			//	Reference to player controller
+	public Sprite[] menuItems;				//	Array of sprites for menu items
 
-	public Sprite[] menuItems;
+	//	Private Variables
+	private Color m_Color;					//	Color of highlight when cursor is over food
+	private Color temp;						//	Temporary variable to swap color
+	private GameManager m_GM;				//	Reference to GameManager
+	private Vector3 m_Hide;					//	Hides menu
 
-	private Color m_Color;
-	private Color temp;
-	private GameManager m_GM;
-	private Vector3 m_Hide;								//	Hides menu
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	void Start () 
 	{
 		player = GameObject.FindGameObjectWithTag ("Player").GetComponent<PlayerController> ();
@@ -61,6 +65,12 @@ public class FoodManager : MonoBehaviour
 		yourDrink = GameObject.FindGameObjectWithTag ("Water").GetComponent<Image> ();
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Ordered: Logic for menu and storing player's order									*/
+	/*		param: GameObject menuItem -													*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void Ordered(GameObject menuItem)
 	{
 		item = menuItem;
@@ -87,6 +97,15 @@ public class FoodManager : MonoBehaviour
 		}
 		if (item.tag == "Appetizers")
 		{
+			if(item.name == "Mozzarella Stick")
+			{
+				player.playerSelfImage = 4;
+			}
+			else if (item.name == "Nacho")
+			{
+				player.playerSelfImage = 3;
+			}
+
 			dinnerOrder [1] = item.name;
 			foreach (GameObject otherItem in appItems)
 			{
@@ -120,12 +139,23 @@ public class FoodManager : MonoBehaviour
 		}
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	FinishedOrdering: Hides menu when finished ordering									*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void FinishedOrdering()
 	{
 		transform.localScale = m_Hide;
 		finishedOrdering = true;
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	SetFoodImage: Displays sprite with your meal										*/
+	/*		param: string food - the name of what you ordered								*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void SetFoodImage(string food)
 	{
 		//	Needs to relate to self image somehow I want specific numbers
@@ -136,12 +166,11 @@ public class FoodManager : MonoBehaviour
 		if (food.Equals("Mozzarella Stick"))
 		{
 			GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().sprite = menuItems [4];
-			player.playerSelfImage = 8;
+
 		}
 		if (food.Equals("Nacho"))
 		{
 			GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().sprite = menuItems [5];
-			player.playerSelfImage = 6;
 		}
 		if (food.Equals("Salad"))
 		{
@@ -169,6 +198,12 @@ public class FoodManager : MonoBehaviour
 		}
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	SetDrinkImage: Displays sprite with your drink										*/
+	/*		param: string food - the name of what you ordered								*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void SetDrinkImage(string drink)
 	{
 		if (drink.Equals("Soda"))
@@ -185,11 +220,11 @@ public class FoodManager : MonoBehaviour
 		}
 	}
 	
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Update: Called once per frame (Will be used for visual fx)							*/
-/*																						*/
-///*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Update: Called once per frame (Will be used for visual fx)							*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
 	void Update () 
 	{
 		if (item.GetComponent<Toggle>() != null)
@@ -206,10 +241,14 @@ public class FoodManager : MonoBehaviour
 		{
 			if (m_GM.conversationCount > 5)
 			{
+				Color newAlpha = new Color (GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.r, GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.g, GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.b, 1);
+				GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color = newAlpha;
 				SetFoodImage (dinnerOrder [3]);
 			}
 			else if (m_GM.conversationCount > 2)
 			{
+				Color newAlpha = new Color (GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.r, GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.g, GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color.b, 1);
+				GameObject.FindGameObjectWithTag ("YourMeal").GetComponent<Image> ().color = newAlpha;
 				SetFoodImage (dinnerOrder [2]);
 			}
 			else if (m_GM.conversationCount > -1)

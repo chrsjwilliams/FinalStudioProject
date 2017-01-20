@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 /*--------------------------------------------------------------------------------------*/
@@ -7,40 +8,61 @@ using System.Collections;
 /*					  																	*/
 /*																						*/
 /*			Functions:																	*/
-/*					Start()																*/
-/*					DisableInputTimer()													*/
-/*					Update()															*/
+/*					Awake ()															*/
+/*					Start ()															*/
+/*					DisableInputTimer (float seconds)									*/
+/*					LastTrip (float seconds)											*/
+/*					ToggleRestroom ()													*/
+/*					LeaveDinner ()														*/
+/*					Update ()															*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/
 public class GameManager : MonoBehaviour 
 {
-	public int conversationCount;
-	public int restroomVisitCount;
-	public bool togglRestroomDialouge;
-	private bool m_DisableInput;
-	public bool m_VisitingRestroom;
-	private TextboxManager m_TextboxManager;
-	public GameObject m_RestroomScreen;
-	[SerializeField]
-	private PlayerController m_Player;
-	public FoodManager foodManager;
-	public GameObject[] m_Friends;
-	private Vector3 m_Hide;								//	Hides conversation steering slider
-	private Vector3 m_RestroomScale;
+	//	Public Variables
+	public bool togglRestroomDialouge;			//	Turns on Restroom dialouge
+	public bool visitingRestroom;				//	Is player in the restroom
+	public int conversationCount;				//	Counts the conversations had by the player with the other characters
+	public int restroomVisitCount;				//	Counts how many times the play visits the restroom
+	public AudioClip backgrounMusic;			//	Game's background music	
+	public AudioSource m_AudioSource;			//	Reference to Game Manager's audio source
+	public FoodManager foodManager;				//	Reference to the Food Manager
+	public GameObject[] m_Friends;				//	Stores friends in an array
+	public GameObject m_RestroomScreen;			//	The restroom scene
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	//	Private Variables
+	private bool m_DisableInput;				//	Disables player's input
+	private PlayerController m_Player;			//	Referrence to the player
+	private Vector3 m_Hide;						//	Hides conversation steering slider
+	private Vector3 m_RestroomScale;			//	Reference to Restroom scene scale
+	private TextboxManager m_TextboxManager;	//	Reference to Textbox Manager
+
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Awake: Runs once at the begining of the game before Start (). Initalizes variables.	*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
+	void Awake ()
+	{
+		m_AudioSource = GetComponent<AudioSource> ();
+	}
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	void Start () 
 	{
 		restroomVisitCount = 0;
-		m_VisitingRestroom = false;
+		visitingRestroom = false;
 		togglRestroomDialouge = false;
 		conversationCount = 0;
 		m_Hide = new Vector3 (0, 0, 0);
 		m_RestroomScale = new Vector3 (4.343573f, 4.34357f, 4.34357f);
+		m_AudioSource.clip = backgrounMusic;
+		m_AudioSource.Play ();
 	}
 
 	/*--------------------------------------------------------------------------------------*/
@@ -57,56 +79,79 @@ public class GameManager : MonoBehaviour
 
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	LastTrip: Takes player to restroom one last time before game ends					*/
+	/*		param: float seconds - how many seconds the function waits for 					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
+	IEnumerator LastTrip(float seconds)
+	{
+		visitingRestroom = true;
+		yield return new WaitForSeconds (seconds);
+		SceneManager.LoadScene ("EndQuote", LoadSceneMode.Single);
+		visitingRestroom = false;
+
+	}
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	ToggleRestroom: Makes Restroom scene appear and disappear							*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void ToggleRestroom()
 	{
-		m_VisitingRestroom = !m_VisitingRestroom;
-		if (m_VisitingRestroom)
+		visitingRestroom = !visitingRestroom;
+		if (visitingRestroom)
 		{
 			restroomVisitCount++;
 		}
 
-		if (!m_VisitingRestroom && restroomVisitCount > 3)
+		if (!visitingRestroom && restroomVisitCount > 3)
 		{
 			togglRestroomDialouge = true;
 		}
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	LeaveDinner: Gives player oppurtunity to quit at anytime							*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void LeaveDinner()
 	{
-		Application.LoadLevel ("EndQuote");
+		StartCoroutine (LastTrip (5f));
 	}
 	
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Update: Called once per frame (Will be used for visual fx)							*/
-/*																						*/
-///*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Update: Called once per frame (Will be used for visual fx)							*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
 	void Update () 
 	{
-		if (Application.loadedLevelName == "SplashScreen" && Input.GetMouseButtonDown(0))
+		if (SceneManager.GetActiveScene().name == "SplashScreen" && Input.GetMouseButtonDown(0))
 		{
-			Application.LoadLevel ("BeginQuote");
+			SceneManager.LoadScene ("BeginQuote", LoadSceneMode.Single);
 			StartCoroutine (DisableInputTimer(3.0f));
 		}
-		if (Application.loadedLevelName == "BeginQuote" && Input.GetMouseButtonDown(0))
+		if (SceneManager.GetActiveScene().name == "BeginQuote" && Input.GetMouseButtonDown(0))
 		{
-			Application.LoadLevel ("Dinner");
+			SceneManager.LoadScene ("Dinner", LoadSceneMode.Single);
 			StartCoroutine (DisableInputTimer(3.0f));
 		}
-		if (Application.loadedLevelName == "Dinner")
+		if (SceneManager.GetActiveScene().name == "Dinner")
 		{
 			m_RestroomScreen = GameObject.FindGameObjectWithTag ("Restroom");
 			m_TextboxManager = GameObject.FindGameObjectWithTag ("TextManager").GetComponent<TextboxManager>();
 			foodManager = GameObject.FindGameObjectWithTag ("Menu").GetComponent<FoodManager> ();
 			m_Player = GameObject.FindGameObjectWithTag ("Player").GetComponent<PlayerController>();
 			m_Friends = GameObject.FindGameObjectsWithTag ("Friend");
-
-
 		}
 
 		if (m_RestroomScreen != null) 
 		{
-			if (m_VisitingRestroom) 
+			if (visitingRestroom) 
 			{
 				m_RestroomScreen.transform.localScale = m_RestroomScale;
 			} 
@@ -116,28 +161,16 @@ public class GameManager : MonoBehaviour
 			}
 		}
 
-		if (conversationCount > 8)
-		{
-			Application.LoadLevel ("EndQuote");
-		}
-		else if (conversationCount > 5)
-		{
-			//	show what player ordered
-			//	Bring out entrees
-		}
-		else if (conversationCount > 2)
-		{
-			//	show what player ordered
-			//	BRing out desserts
-		}
-		else if (conversationCount > 0)
-		{
-			
-		}
+		if (m_Player != null) {
 
-		if (Application.loadedLevelName == "EndQuote" && Input.GetMouseButtonDown(0))
+			if (conversationCount > 8 || m_Player.playerSelfImage < 0) {
+			
+				StartCoroutine (LastTrip (5f));
+			}
+		}
+		if (SceneManager.GetActiveScene().name == "EndQuote" && Input.GetMouseButtonDown(0))
 		{
-			Application.LoadLevel ("SplashScreen");
+			SceneManager.LoadScene ("SplashScreen", LoadSceneMode.Single);
 			StartCoroutine (DisableInputTimer(3.0f));
 			conversationCount = 0;
 		}

@@ -2,55 +2,61 @@
 using UnityEngine.UI;
 using System.Collections;
 
-/*
- * 
- * 		TODO:	Make food script. PLay with food function and eat food function	
- * 				Paritcle effect when certain words at sus lvl 3 and 4 appear
- * 				Bathroom via phone button (put the few lines of code to make it work)
- * 				Implement some visual fx
- * 				After dessert one last stop at the restroom
- * 
- */ 
-
 /*--------------------------------------------------------------------------------------*/
 /*																						*/
 /*	TextboxManager: 																	*/
 /*																						*/
 /*			Functions:																	*/
-/*					Start()																*/
-/*					DisableInputTime()													*/
-/*					SteerConversationTimer()											*/
-/*					InitiateConversation(FirendController friend)						*/
-/*					Update()															*/
+/*					Start ()															*/
+/*					DisableInputTime (float seconds)									*/
+/*					EndConversation (float seconds)										*/
+/*					TypeText (string compareWord)										*/
+/*					SteerConversationTimer (float seconds, int thisLine)				*/
+/*					LoadAndRunConversationWith (FriendController friend)				*/
+/*					GianCarloConversation (ref FriendController friend)					*/
+/*					CandaceConversation (ref FriendController friend)					*/
+/*					MikeConversation (ref FriendController friend)						*/
+/*					RestroomDialouge ()													*/		
+/*					NotEating ()														*/
+/*					Update ()															*/
+/*																						*/
+/*																						*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/
 public class TextboxManager : MonoBehaviour 
 {
+	//	Public Variables
 	public bool conversationIsOver;						//	Allows player to talk to other friends when the current conversation is done
 	public bool disableInput;							//	Bool to disable ALL input after click event
 	public bool steerConversation;						//	Disables progressing through conversation text when in click event
-	public float comfortLevelReference;					//	Reference to player's comfort level
 	public bool[] conversationPasses;					//	Reference to conversationCheck in FriendController script
-	public GameObject conversation;						//	Reference to the Conversation Script
-	public GameObject panel;							//	Reference to Panel
-	public UnityEngine.UI.Text theText;					//	Reference to text in text box
-	public TextAsset textFile;							//	The file where the dialogue comes from
-	public string talkingTo;							//	Who the player character is currently talking to
-	public string currentTextLine;						//	Current line in a string
-	private string currentWord = "";					//	Current word on currentTextLine
-	public string[] textLines;							//	Lines of text in the textFile
+	public float comfortLevelReference;					//	Reference to player's comfort level
 	public float letterPause = 0.075f;					//	Pause to draw each letter
 	public int currentLine;								//	Line of text being displayed
 	public int endAtLine;								//	Last line of text file
-	public CanvasGroup textpanel;							//	Reference to canvas group to hide textbox when not in use
+	public string talkingTo;							//	Who the player character is currently talking to
+	public string currentTextLine;						//	Current line in a string
+	public string[] textLines;							//	Lines of text in the textFile
+	public UnityEngine.UI.Text theText;					//	Reference to text in text box
+	public TextAsset textFile;							//	The file where the dialogue comes from
+	public CanvasGroup textpanel;						//	Reference to canvas group to hide textbox when not in use
 	public PlayerController player;						//	reference to the player
+	public BlurController blur;							//	Reference to BLur controllerer
+	public FriendController m_FriendReference;			//	Reference to the friend the player is talking to
+	public GameObject conversation;						//	Reference to the Conversation Script
+	public GameObject panel;							//	Reference to Panel
 
+	//	Private Variables
+	private string currentWord = "";					//	Current word on currentTextLine
 	private Vector3 m_Hide;								//	Hides conversation steering slider
 	private Vector3 m_Appear;							//	Makes conversation steering slider appear
-	private FriendController m_FriendReference;			//	Reference to the friend the player is talking to
-	private GameManager m_GameManager;								//	Reference to the Game Manager
+	private GameManager m_GameManager;					//	Reference to the Game Manager
 
-	// Use this for initialization
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/	
 	void Start ()
 	{
 		//	We can take in input
@@ -80,6 +86,9 @@ public class TextboxManager : MonoBehaviour
 		//	Sets reference to text
 		theText = GameObject.FindGameObjectWithTag("Text").GetComponent<UnityEngine.UI.Text> ();
 		textpanel = panel.GetComponent<CanvasGroup> ();
+
+		blur = GameObject.FindGameObjectWithTag ("Blur").GetComponent<BlurController> ();
+
 		//	Loads blank file to avoid null reference error since a conversation hasn't started yet
 		textFile = Resources.Load ("blank") as TextAsset;
 		if (textFile != null)
@@ -104,12 +113,12 @@ public class TextboxManager : MonoBehaviour
 		m_GameManager = GameObject.FindGameObjectWithTag ("GameController").GetComponent<GameManager>();
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	DisableInputTime: Disables input for x seconds										*/
-/*		param: float seconds - how many seconds the function waits for 					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	DisableInputTime: Disables input for x seconds										*/
+	/*		param: float seconds - how many seconds the function waits for 					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	IEnumerator DiableInputTimer(float seconds)
 	{
 		if (m_FriendReference != null) 
@@ -123,34 +132,30 @@ public class TextboxManager : MonoBehaviour
 			m_FriendReference.GetComponent<Button> ().enabled = true;
 		}
 		disableInput = false;
-
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	EndConversation: hides text panel at the end of the conversation					*/
-/*		param: float seconds - how many seconds the function waits for 					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	EndConversation: hides text panel at the end of the conversation					*/
+	/*		param: float seconds - how many seconds the function waits for 					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	IEnumerator EndConversation(float seconds)
 	{
+		Debug.Log ("Running");
+		talkingTo = "";
 		yield return new WaitForSeconds (seconds);
+		for(int i = 0; i < conversationPasses.Length; i++)
+		{
+			conversationPasses [i] = false;
+		}
 		conversationIsOver = true;
-		textFile = Resources.Load ("blank") as TextAsset;
-		if (textFile != null)
-		{
-			//	Splits text file at the "Enter" key also known as \n
-			textLines = (textFile.text.Split ('\n'));
-		}
+		currentLine = 0;
+		m_FriendReference.conversationIsOver = true;
 
-		if (endAtLine == 0)
-		{
-			//	Last line is length - 1
-			endAtLine = textLines.Length - 1;
-		}
 
 		// Currently talking to no one
-		talkingTo = "";
+
 
 		//	Makes text panel visible
 		player.isTalking = false;
@@ -158,12 +163,12 @@ public class TextboxManager : MonoBehaviour
 		textpanel.blocksRaycasts = false;
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	TypeText: Types texts word by word													*/
-/*		param: string compareWord - the current line of text							*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	TypeText: Types texts word by word													*/
+	/*		param: string compareWord - the current line of text							*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	private IEnumerator TypeText (string compareWord)
 	{
 		//	Splits the line into words at the ' ' character
@@ -197,12 +202,12 @@ public class TextboxManager : MonoBehaviour
 		}  
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	SteerConversationTimer: Player steers conversation for x seconds					*/
-/*		param: float seconds - how many seconds the function waits for 					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	SteerConversationTimer: Player steers conversation for x seconds					*/
+	/*		param: float seconds - how many seconds the function waits for 					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	IEnumerator SteerConversationTimer(float seconds , int thisLine)
 	{
 		
@@ -216,6 +221,9 @@ public class TextboxManager : MonoBehaviour
 			m_FriendReference.RaiseSuspicion ();
 
 			player.LoseComposure ();
+
+			// Blurs scene
+			blur.BlurScreen ();
 
 			//	We are done with the conversation steering slider so we hide it
 			conversation.transform.localScale = m_Hide;
@@ -249,421 +257,79 @@ public class TextboxManager : MonoBehaviour
 		steerConversation = false;
 	}
 		
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	LoadAndRunConversationWith: Navigates through conversations and handles the			*/
-/*								conversation's states									*/
-/*		param: FriendController friend - Lets us know which friend and what 			*/
-/*										 suspcion level they have						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	LoadAndRunConversationWith: Navigates through conversations and handles the			*/
+	/*								conversation's states									*/
+	/*		param: FriendController friend - Lets us know which friend and what 			*/
+	/*										 suspcion level they have						*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void LoadAndRunConversationWith(FriendController friend)
 	{
-
-		Resources.UnloadAsset (textFile);
-		friend.talkingToPlayer = true;
-		player.isTalking = true;
-
-		textpanel.alpha = 1f;
-		textpanel.blocksRaycasts = true;
-
-		//	Sets our friend reference incase we need it outside this function
-		m_FriendReference = friend;
-
-		//	All conversation stuff for GianCarlo goes in here
-		if (friend.friendName.Equals ("GC") && (conversationIsOver || talkingTo.Equals("GC"))) // Make a talking to 
-		{
-			GianCarloConversation (ref friend);
-		}
-		if (friend.friendName.Equals ("Candace") && (conversationIsOver || talkingTo.Equals("Candace")))
-		{
-			CandaceConversation (ref friend);
-		}
-		if (friend.friendName.Equals ("Mike") && (conversationIsOver || talkingTo.Equals("Mike")))
-		{
-			MikeConversation (ref friend);
-		}
-
-		//	We started a conversation
-		conversationIsOver = false;
-
 		//	Emptys the text panel after each block of text
 		theText.text = "";
 
 		//	Displays text on the panel
+
+		//talkingTo = friend.name;
+
+		player.isTalking = true;
+		textpanel.alpha = 1f;
+		textpanel.blocksRaycasts = true;
+
+		if ( !disableInput && !steerConversation && (conversationIsOver || friend == m_FriendReference)) 
+		{
+			currentLine++;
+		}
+
+
+		//	All conversation stuff for GianCarlo goes in here
+		if (friend.friendName.Equals ("GC") && (conversationIsOver || talkingTo.Equals("GC")))
+		{
+			m_FriendReference = friend;
+			GianCarloConversation (ref friend);
+			friend.talkingToPlayer = true;
+		}
+		if (friend.friendName.Equals ("Candace") && (conversationIsOver || talkingTo.Equals("Candace")))
+		{
+			m_FriendReference = friend;
+			CandaceConversation (ref friend);
+			friend.talkingToPlayer = true;
+		}
+		if (friend.friendName.Equals ("Mike") && (conversationIsOver || talkingTo.Equals("Mike")))
+		{
+			m_FriendReference = friend;
+			MikeConversation (ref friend);
+			friend.talkingToPlayer = true;
+		}
+
+
+		Debug.Log (friend.name);
+		Debug.Log ("Reference: " + m_FriendReference.name);
+		//	We started a conversation
+		conversationIsOver = false;
 		currentTextLine = textLines [currentLine];
+
 		//	Seprates text line word by word
 		StartCoroutine (TypeText (currentTextLine));
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	CandaceConversation: Navigates through conversations and handles the				*/
-/*								conversation's states									*/
-/*		param: FriendController friend - Lets us know which friend and what 			*/
-/*										 suspcion level they have						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	GianCarloConversation: Navigates through conversations and handles the				*/
+	/*								conversation's states									*/
+	/*		param: FriendController friend - Lets us know which friend and what 			*/
+	/*										 suspcion level they have						*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	void GianCarloConversation(ref FriendController friend)
 	{
+		// load appropriate txt and set to last line, then end conversation
+		
 		talkingTo = friend.friendName;
 		//	We check GC's suspciion level and load the appropriate file and split each line at the neter key "\n"
-		if (friend.conversationCheck[3] && friend.suspicionLevel == 3) 
-		{
-			textFile = Resources.Load ("GC_SusLvl4") as TextAsset;
-
-			if (!conversationPasses [3]) 
-			{
-				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 9) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [0] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 10)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 12) 
-				{
-					currentLine = 14;
-				}
-				if (currentLine == 15)
-				{
-					currentLine = 14;
-				}
-
-				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 20) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [1] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 21)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 22) 
-				{
-					currentLine = 25;
-				}
-				if (currentLine == 24) 
-				{
-					currentLine = 25;
-				}
-
-				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 28) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [2] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 29)
-				{
-					StartCoroutine (DiableInputTimer (1.5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 30)
-				{
-					currentLine = 33;
-				}
-				if (currentLine == 32) 
-				{
-					currentLine = 33;
-				}
-
-				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
-				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
-					StartCoroutine (EndConversation(1.75f));
-				}
-			}
-			else
-			{
-				friend.conversationCheck [0] = true;
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-				StartCoroutine (EndConversation(1.75f));
-			}
-			textLines = (textFile.text.Split ('\n'));
-			endAtLine = textLines.Length - 1;
-		}
-		else if (friend.conversationCheck[2] && friend.suspicionLevel == 2)
-		{
-			textFile = Resources.Load ("GC_SusLvl3") as TextAsset;
-
-			if (!conversationPasses [3]) 
-			{
-				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 9) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [0] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 10)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 12) 
-				{
-					currentLine = 15;
-				}
-				if (currentLine == 14)
-				{
-					currentLine = 15;
-				}
-
-				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 21) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [1] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 22)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 23) 
-				{
-					currentLine = 26;
-				}
-				if (currentLine == 25) 
-				{
-					currentLine = 26;
-				}
-
-				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 30) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [2] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 31)
-				{
-					StartCoroutine (DiableInputTimer (1.5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 32)
-				{
-					currentLine = 35;
-				}
-				if (currentLine == 36) 
-				{
-					currentLine = 35;
-				}
-
-				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
-				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
-					StartCoroutine (EndConversation(1.75f));
-				}
-			}
-			else
-			{
-				friend.conversationCheck [0] = true;
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-				StartCoroutine (EndConversation(1.75f));
-			}
-
-			textLines = (textFile.text.Split ('\n'));
-			endAtLine = textLines.Length - 1;
-		}
-		else if (friend.conversationCheck[1] && friend.suspicionLevel == 1)
-		{
-			textFile = Resources.Load ("GC_SusLvl2") as TextAsset;
-			if (!conversationPasses [3]) 
-			{
-				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 8) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [0] = true;
-				
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-				
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-				
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 9)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-				
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 10) 
-				{
-					currentLine = 13;
-				}
-				if (currentLine == 12)
-				{
-					currentLine = 13;
-				}
-				
-				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 19) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [1] = true;
-				
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-				
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-				
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 20)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-				
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 21) 
-				{
-					currentLine = 24;
-				}
-				if (currentLine == 23) 
-				{
-					currentLine = 24;
-				}
-				
-				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 27) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [2] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-				
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-				
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 28)
-				{
-					StartCoroutine (DiableInputTimer (1.5f));
-				}
-				
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 29)
-				{
-					currentLine = 32;
-				}
-				if (currentLine == 31) 
-				{
-					currentLine = 32;
-				}
-				
-				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
-				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
-					StartCoroutine (EndConversation(1.75f));
-				}
-			}
-			else
-			{
-				friend.conversationCheck [0] = true;
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-				StartCoroutine (EndConversation(1.75f));
-			}
-			
-				textLines = (textFile.text.Split ('\n'));
-				endAtLine = textLines.Length - 1;
-			}
-		else if (friend.conversationCheck[0])
+		if (!friend.conversationCheck[0])
 		{
 			/*---------------Logic for Suspicion level 1 of GC------------------*/
 
@@ -767,48 +433,25 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation(1.75f));
+					friend.conversationCheck [0] = true;
+					conversationPasses [3] = true;
+					currentLine = 0;
+					m_GameManager.conversationCount++;
+
 				}
 			}
-			else
-			{
-				friend.conversationCheck [0] = true;
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-				StartCoroutine (EndConversation(1.75f));
-			}
 
-			//Sets the appropriate length for each text file
-			textLines = (textFile.text.Split ('\n'));
-			endAtLine = textLines.Length - 1;
 		}
-	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	CandaceConversation: Navigates through conversations and handles the				*/
-/*								conversation's states									*/
-/*		param: ref FriendController friend - Lets us know which friend and what 		*/
-/*										 suspcion level they have						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
-	void CandaceConversation(ref FriendController friend)
-	{
-		talkingTo = friend.friendName;
-		//	We check GC's suspciion level and load the appropriate file and split each line at the neter key "\n"
-		if (friend.conversationCheck [3] && friend.suspicionLevel == 3) 
+		else if (!friend.conversationCheck[1] && friend.suspicionLevel > 1)
 		{
-			textFile = Resources.Load ("CN_SusLvl4") as TextAsset;
-
+			textFile = Resources.Load ("GC_SusLvl2") as TextAsset;
 			if (!conversationPasses [3]) 
 			{
 				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 9) 
+				if (currentLine == 8) 
 				{
 					//	We've passed conversation steering part of the conversation
 					conversationPasses [0] = true;
@@ -823,23 +466,23 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 10)
+				if (currentLine == 9)
 				{
 					StartCoroutine (DiableInputTimer (5f));
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 11) 
+				if (currentLine == 10) 
 				{
-					currentLine = 14;
+					currentLine = 13;
 				}
-				if (currentLine == 13)
+				if (currentLine == 12)
 				{
-					currentLine = 14;
+					currentLine = 13;
 				}
 
 				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 20) 
+				if (currentLine == 19) 
 				{
 					//	We've passed conversation steering part of the conversation
 					conversationPasses [1] = true;
@@ -854,23 +497,23 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 21)
+				if (currentLine == 20)
 				{
 					StartCoroutine (DiableInputTimer (5f));
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 22) 
+				if (currentLine == 21) 
 				{
-					currentLine = 23;
+					currentLine = 24;
 				}
-				if (currentLine == 22) 
+				if (currentLine == 23) 
 				{
-					currentLine = 23;
+					currentLine = 24;
 				}
 
 				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 28) 
+				if (currentLine == 27) 
 				{
 					//	We've passed conversation steering part of the conversation
 					conversationPasses [2] = true;
@@ -885,44 +528,48 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 29)
+				if (currentLine == 28)
 				{
 					StartCoroutine (DiableInputTimer (1.5f));
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 30)
+				if (currentLine == 29)
 				{
-					currentLine = 33;
+					currentLine = 32;
 				}
-				if (currentLine == 32) 
+				if (currentLine == 31) 
 				{
-					currentLine = 33;
+					currentLine = 32;
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
+					friend.conversationCheck [1] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
+
 					StartCoroutine (EndConversation(1.75f));
 				}
 			}
 			else
 			{
-				friend.conversationCheck [0] = true;
+				currentLine = textLines.Length - 1;
+
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
+
 				StartCoroutine (EndConversation(1.75f));
 			}
+
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
-				
-		} 
-		else if (friend.conversationCheck [2] && friend.suspicionLevel == 2) 
+		}
+		else if (!friend.conversationCheck[2] && friend.suspicionLevel > 2)
 		{
-			textFile = Resources.Load ("CN_SusLvl3") as TextAsset;
+			textFile = Resources.Load ("GC_SusLvl3") as TextAsset;
 
 			if (!conversationPasses [3]) 
 			{
@@ -948,13 +595,13 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 11) 
+				if (currentLine == 12) 
 				{
-					currentLine = 14;
+					currentLine = 15;
 				}
-				if (currentLine == 13)
+				if (currentLine == 14)
 				{
-					currentLine = 14;
+					currentLine = 15;
 				}
 
 				//	At line 21 which is a "..." we start the conversation steering slider
@@ -989,7 +636,7 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 29) 
+				if (currentLine == 30) 
 				{
 					//	We've passed conversation steering part of the conversation
 					conversationPasses [2] = true;
@@ -1004,24 +651,25 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 30)
+				if (currentLine == 31)
 				{
 					StartCoroutine (DiableInputTimer (1.5f));
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 31)
+				if (currentLine == 32)
 				{
-					currentLine = 34;
+					currentLine = 35;
 				}
-				if (currentLine == 33) 
+				if (currentLine == 36) 
 				{
-					currentLine = 34;
+					currentLine = 35;
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
+					friend.conversationCheck [2] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation(1.75f));
@@ -1029,7 +677,127 @@ public class TextboxManager : MonoBehaviour
 			}
 			else
 			{
-				friend.conversationCheck [0] = true;
+				currentLine = textLines.Length - 1;
+				//	Makes panel appear with the "hold on I'm getting a text line"
+				textpanel.alpha = 1f;
+				textpanel.blocksRaycasts = true;
+				StartCoroutine (EndConversation(1.75f));
+			}
+
+			textLines = (textFile.text.Split ('\n'));
+			endAtLine = textLines.Length - 1;
+		}
+		else if (!friend.conversationCheck[3] && friend.suspicionLevel > 3) 
+		{
+			textFile = Resources.Load ("GC_SusLvl4") as TextAsset;
+
+			if (!conversationPasses [3]) 
+			{
+				//	At line 7 which is a "..." we start the conversation steering slider
+				if (currentLine == 9) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [0] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 10)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 12) 
+				{
+					currentLine = 14;
+				}
+				if (currentLine == 15)
+				{
+					currentLine = 14;
+				}
+
+				//	At line 21 which is a "..." we start the conversation steering slider
+				if (currentLine == 20) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [1] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 21)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 22) 
+				{
+					currentLine = 25;
+				}
+				if (currentLine == 24) 
+				{
+					currentLine = 25;
+				}
+
+				//	At line 29 which is a "..." we start the conversation steering slider
+				if (currentLine == 28) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [2] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 29)
+				{
+					StartCoroutine (DiableInputTimer (1.5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 30)
+				{
+					currentLine = 33;
+				}
+				if (currentLine == 32) 
+				{
+					currentLine = 33;
+				}
+
+				//	We have passed through this conversation text file. The last line will now appear
+				if (currentLine == textLines.Length - 1) 
+				{
+					friend.conversationCheck [3] = true;
+					conversationPasses [3] = true;
+					m_GameManager.conversationCount++;
+					StartCoroutine (EndConversation(1.75f));
+				}
+			}
+			else
+			{
+				currentLine = textLines.Length - 1;
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
@@ -1037,9 +805,217 @@ public class TextboxManager : MonoBehaviour
 			}
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
+		}
+		else
+		{
+			Debug.Log ("Here");
+			if (friend.conversationCheck[0])
+			{
+				textFile = Resources.Load ("GC_SusLvl1") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
 
-		} 
-		else if (friend.conversationCheck [1] && friend.suspicionLevel == 1) 
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[1])
+			{
+				textFile = Resources.Load ("GC_SusLvl2") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[2])
+			{
+				textFile = Resources.Load ("GC_SusLvl3") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[3])
+			{
+				textFile = Resources.Load ("GC_SusLvl4") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+
+			currentLine = textLines.Length - 1;
+			if (currentLine == textLines.Length - 1)
+			{
+				StartCoroutine (EndConversation(1.75f));
+			}
+
+
+			//	Makes panel appear with the "hold on I'm getting a text line"
+			textpanel.alpha = 1f;
+			textpanel.blocksRaycasts = true;
+
+		}
+
+		//Sets the appropriate length for each text file
+		textLines = (textFile.text.Split ('\n'));
+		endAtLine = textLines.Length - 1;
+	}
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	CandaceConversation: Navigates through conversations and handles the				*/
+	/*								conversation's states									*/
+	/*		param: ref FriendController friend - Lets us know which friend and what 		*/
+	/*										 suspcion level they have						*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
+	void CandaceConversation(ref FriendController friend)
+	{
+		talkingTo = friend.friendName;
+		//	We check GC's suspciion level and load the appropriate file and split each line at the neter key "\n"
+		if (!friend.conversationCheck [0]) 
+		{
+
+			//If we've gone through this conversation with raising suspicion we skip all the if statements
+			if (!conversationPasses [3]) {
+				//	Loads the file
+				textFile = Resources.Load ("CN_SusLvl1") as TextAsset;
+
+				//	At line 7 which is a "..." we start the conversation steering slider
+				if (currentLine == 9) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [0] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 10) 
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 11) 
+				{
+					currentLine = 14;
+				}
+				if (currentLine == 13) 
+				{
+					currentLine = 14;
+				}
+
+				//	At line 21 which is a "..." we start the conversation steering slider
+				if (currentLine == 23) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [1] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 24) 
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 25) 
+				{
+					currentLine = 28;
+				}
+				if (currentLine == 27) 
+				{
+					currentLine = 28;
+				}
+
+				//	At line 29 which is a "..." we start the conversation steering slider
+				if (currentLine == 31) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [2] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 32) 
+				{
+					StartCoroutine (DiableInputTimer (1.5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 33) 
+				{
+					currentLine = 36;
+				}
+				if (currentLine == 35) 
+				{
+					currentLine = 36;
+				}
+
+				//	We have passed through this conversation text file. The last line will now appear
+				if (currentLine == textLines.Length - 1) 
+				{
+					friend.conversationCheck [0] = true;
+					conversationPasses [3] = true;
+					m_GameManager.conversationCount++;
+					StartCoroutine (EndConversation(1.75f));
+				}
+			} 
+		}
+		else if (!friend.conversationCheck [1] && friend.suspicionLevel > 1) 
 		{
 			textFile = Resources.Load ("CN_SusLvl2") as TextAsset;
 
@@ -1139,8 +1115,9 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
+					friend.conversationCheck [1] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation(1.75f));
@@ -1148,7 +1125,7 @@ public class TextboxManager : MonoBehaviour
 			}
 			else
 			{
-				friend.conversationCheck [0] = true;
+				currentLine = textLines.Length - 1;
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
@@ -1157,146 +1134,11 @@ public class TextboxManager : MonoBehaviour
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
 
-				
+
 		} 
-		else if (friend.conversationCheck [0]) 
+		else if (!friend.conversationCheck [2] && friend.suspicionLevel > 2) 
 		{
-
-			//If we've gone through this conversation with raising suspicion we skip all the if statements
-			if (!conversationPasses [3]) {
-				//	Loads the file
-				textFile = Resources.Load ("CN_SusLvl1") as TextAsset;
-			
-				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 9) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [0] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 10) 
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 11) 
-				{
-					currentLine = 14;
-				}
-				if (currentLine == 13) 
-				{
-					currentLine = 14;
-				}
-
-				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 23) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [1] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 24) 
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 25) 
-				{
-					currentLine = 28;
-				}
-				if (currentLine == 27) 
-				{
-					currentLine = 28;
-				}
-
-				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 31) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [2] = true;
-				
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 32) 
-				{
-					StartCoroutine (DiableInputTimer (1.5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 33) 
-				{
-					currentLine = 36;
-				}
-				if (currentLine == 35) 
-				{
-					currentLine = 36;
-				}
-
-				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
-				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
-					StartCoroutine (EndConversation(1.75f));
-				}
-			} 
-			else 
-			{
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-			}
-
-			//Sets the appropriate length for each text file
-			textLines = (textFile.text.Split ('\n'));
-			endAtLine = textLines.Length - 1;
-		}
-	}
-
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	MikeConversation: Navigates through conversations and handles the					*/
-/*								conversation's states									*/
-/*		param: ref FriendController friend - Lets us know which friend and what 		*/
-/*										 suspcion level they have						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
-	void MikeConversation(ref FriendController friend)
-	{
-		talkingTo = friend.friendName;
-
-		//	We check GC's suspciion level and load the appropriate file and split each line at the neter key "\n"
-		if (friend.conversationCheck [3] && friend.suspicionLevel == 3) 
-		{
-			textFile = Resources.Load ("MK_SusLvl4") as TextAsset;
+			textFile = Resources.Load ("CN_SusLvl3") as TextAsset;
 
 			if (!conversationPasses [3]) 
 			{
@@ -1353,13 +1195,13 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 23) 
+				{
+					currentLine = 26;
+				}
 				if (currentLine == 25) 
 				{
-					currentLine = 28;
-				}
-				if (currentLine == 27) 
-				{
-					currentLine = 28;
+					currentLine = 26;
 				}
 
 				//	At line 29 which is a "..." we start the conversation steering slider
@@ -1390,12 +1232,13 @@ public class TextboxManager : MonoBehaviour
 				}
 				if (currentLine == 33) 
 				{
-					currentLine = 33;
+					currentLine = 34;
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
+					friend.conversationCheck [2] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation(1.75f));
@@ -1403,7 +1246,8 @@ public class TextboxManager : MonoBehaviour
 			}
 			else
 			{
-				friend.conversationCheck [0] = true;
+				currentLine = textLines.Length - 1;
+
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
@@ -1411,128 +1255,11 @@ public class TextboxManager : MonoBehaviour
 			}
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
+
 		} 
-		else if (friend.conversationCheck [2] && friend.suspicionLevel == 2)
+		else if (!friend.conversationCheck [3] && friend.suspicionLevel > 3) 
 		{
-			textFile = Resources.Load ("MK_SusLvl3") as TextAsset;
-
-			if (!conversationPasses [3]) 
-			{
-				//	At line 7 which is a "..." we start the conversation steering slider
-				if (currentLine == 7) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [0] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 8)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 9) 
-				{
-					currentLine = 12;
-				}
-				if (currentLine == 11)
-				{
-					currentLine = 12;
-				}
-
-				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 19) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [1] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 20)
-				{
-					StartCoroutine (DiableInputTimer (5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 21) 
-				{
-					currentLine = 24;
-				}
-				if (currentLine == 23) 
-				{
-					currentLine = 24;
-				}
-
-				//	At line 29 which is a "..." we start the conversation steering slider
-				if (currentLine == 27) 
-				{
-					//	We've passed conversation steering part of the conversation
-					conversationPasses [2] = true;
-
-					//	We are now steering a conversation. Make the slider appear and make it move
-					conversation.transform.localScale = m_Appear;
-					steerConversation = true;
-					conversation.GetComponent<Conversation> ().startSlider = true;
-
-					//	Start the timer
-					StartCoroutine (SteerConversationTimer (3f, currentLine));
-				}
-
-				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 28)
-				{
-					StartCoroutine (DiableInputTimer (1.5f));
-				}
-
-				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 29)
-				{
-					currentLine = 32;
-				}
-				if (currentLine == 31) 
-				{
-					currentLine = 32;
-				}
-
-				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
-				{
-					conversationPasses [3] = true;
-					m_GameManager.conversationCount++;
-					StartCoroutine (EndConversation(1.75f));
-				}
-			}
-			else
-			{
-				friend.conversationCheck [0] = true;
-				//	Makes panel appear with the "hold on I'm getting a text line"
-				textpanel.alpha = 1f;
-				textpanel.blocksRaycasts = true;
-				StartCoroutine (EndConversation(1.75f));
-			}
-			textLines = (textFile.text.Split ('\n'));
-			endAtLine = textLines.Length - 1;
-		} 
-		else if (friend.conversationCheck [1] && friend.suspicionLevel == 1) 
-		{
-			textFile = Resources.Load ("MK_SusLvl2") as TextAsset;
+			textFile = Resources.Load ("CN_SusLvl4") as TextAsset;
 
 			if (!conversationPasses [3]) 
 			{
@@ -1568,7 +1295,7 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	At line 21 which is a "..." we start the conversation steering slider
-				if (currentLine == 21) 
+				if (currentLine == 20) 
 				{
 					//	We've passed conversation steering part of the conversation
 					conversationPasses [1] = true;
@@ -1583,19 +1310,19 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
-				if (currentLine == 22)
+				if (currentLine == 21)
 				{
 					StartCoroutine (DiableInputTimer (5f));
 				}
 
 				//	This is here to make the dialouge flow smoothly after failure and success states
-				if (currentLine == 23) 
+				if (currentLine == 22) 
 				{
-					currentLine = 26;
+					currentLine = 23;
 				}
-				if (currentLine == 25) 
+				if (currentLine == 22) 
 				{
-					currentLine = 26;
+					currentLine = 23;
 				}
 
 				//	At line 29 which is a "..." we start the conversation steering slider
@@ -1630,8 +1357,9 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41) 
+				if (currentLine == textLines.Length - 1) 
 				{
+					friend.conversationCheck [3] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation(1.75f));
@@ -1639,7 +1367,7 @@ public class TextboxManager : MonoBehaviour
 			}
 			else
 			{
-				friend.conversationCheck [0] = true;
+				currentLine = textLines.Length - 1;
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
@@ -1647,8 +1375,103 @@ public class TextboxManager : MonoBehaviour
 			}
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
+				
 		} 
-		else if (friend.conversationCheck [0])
+		else
+		{
+			if (friend.conversationCheck[0])
+			{
+				textFile = Resources.Load ("CN_SusLvl1") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[1])
+			{
+				textFile = Resources.Load ("CN_SusLvl2") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[2])
+			{
+				textFile = Resources.Load ("CN_SusLvl3") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[3])
+			{
+				textFile = Resources.Load ("CN_SusLvl4") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			currentLine = textLines.Length - 1;
+		
+			StartCoroutine (EndConversation(1.75f));
+
+			//	Makes panel appear with the "hold on I'm getting a text line"
+			textpanel.alpha = 1f;
+			textpanel.blocksRaycasts = true;
+
+		}
+
+		//Sets the appropriate length for each text file
+		textLines = (textFile.text.Split ('\n'));
+		endAtLine = textLines.Length - 1;
+	}
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	MikeConversation: Navigates through conversations and handles the					*/
+	/*								conversation's states									*/
+	/*		param: ref FriendController friend - Lets us know which friend and what 		*/
+	/*										 suspcion level they have						*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
+	void MikeConversation(ref FriendController friend)
+	{
+		talkingTo = friend.friendName;
+
+		//	We check GC's suspciion level and load the appropriate file and split each line at the neter key "\n"
+		if (!friend.conversationCheck [0])
 		{
 			/*---------------Logic for Suspicion level 1 of GC------------------*/
 
@@ -1752,26 +1575,461 @@ public class TextboxManager : MonoBehaviour
 				}
 
 				//	We have passed through this conversation text file. The last line will now appear
-				if (currentLine == 41)
+				if (currentLine == textLines.Length - 1)
 				{
+					friend.conversationCheck [0] = true;
 					conversationPasses [3] = true;
 					m_GameManager.conversationCount++;
 					StartCoroutine (EndConversation (1.75f));
 				}
 			}
-			else 
+		}
+		else if (!friend.conversationCheck [1] && friend.suspicionLevel > 1) 
+		{
+			textFile = Resources.Load ("MK_SusLvl2") as TextAsset;
+
+			if (!conversationPasses [3]) 
 			{
+				//	At line 7 which is a "..." we start the conversation steering slider
+				if (currentLine == 9) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [0] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 10)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 11) 
+				{
+					currentLine = 14;
+				}
+				if (currentLine == 13)
+				{
+					currentLine = 14;
+				}
+
+				//	At line 21 which is a "..." we start the conversation steering slider
+				if (currentLine == 21) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [1] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 22)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 23) 
+				{
+					currentLine = 26;
+				}
+				if (currentLine == 25) 
+				{
+					currentLine = 26;
+				}
+
+				//	At line 29 which is a "..." we start the conversation steering slider
+				if (currentLine == 28) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [2] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 29)
+				{
+					StartCoroutine (DiableInputTimer (1.5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 30)
+				{
+					currentLine = 33;
+				}
+				if (currentLine == 32) 
+				{
+					currentLine = 33;
+				}
+
+				//	We have passed through this conversation text file. The last line will now appear
+				if (currentLine == textLines.Length - 1) 
+				{
+					friend.conversationCheck [1] = true;
+					conversationPasses [3] = true;
+					m_GameManager.conversationCount++;
+					StartCoroutine (EndConversation(1.75f));
+				}
+			}
+			else
+			{
+				currentLine = textLines.Length - 1;
+
 				//	Makes panel appear with the "hold on I'm getting a text line"
 				textpanel.alpha = 1f;
 				textpanel.blocksRaycasts = true;
+				StartCoroutine (EndConversation(1.75f));
 			}
-
-			//Sets the appropriate length for each text file
 			textLines = (textFile.text.Split ('\n'));
 			endAtLine = textLines.Length - 1;
 		}
+		else if (!friend.conversationCheck [2] && friend.suspicionLevel > 2)
+		{
+			textFile = Resources.Load ("MK_SusLvl3") as TextAsset;
+
+			if (!conversationPasses [3]) 
+			{
+				//	At line 7 which is a "..." we start the conversation steering slider
+				if (currentLine == 7) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [0] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 8)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 9) 
+				{
+					currentLine = 12;
+				}
+				if (currentLine == 11)
+				{
+					currentLine = 12;
+				}
+
+				//	At line 21 which is a "..." we start the conversation steering slider
+				if (currentLine == 19) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [1] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 20)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 21) 
+				{
+					currentLine = 24;
+				}
+				if (currentLine == 23) 
+				{
+					currentLine = 24;
+				}
+
+				//	At line 29 which is a "..." we start the conversation steering slider
+				if (currentLine == 27) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [2] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 28)
+				{
+					StartCoroutine (DiableInputTimer (1.5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 29)
+				{
+					currentLine = 32;
+				}
+				if (currentLine == 31) 
+				{
+					currentLine = 32;
+				}
+
+				//	We have passed through this conversation text file. The last line will now appear
+				if (currentLine == textLines.Length - 1) 
+				{
+					friend.conversationCheck [2] = true;
+					conversationPasses [3] = true;
+					m_GameManager.conversationCount++;
+					StartCoroutine (EndConversation(1.75f));
+				}
+			}
+			else
+			{
+				currentLine = textLines.Length - 1;
+
+				//	Makes panel appear with the "hold on I'm getting a text line"
+				textpanel.alpha = 1f;
+				textpanel.blocksRaycasts = true;
+				StartCoroutine (EndConversation(1.75f));
+			}
+			textLines = (textFile.text.Split ('\n'));
+			endAtLine = textLines.Length - 1;
+		} 
+		else if (!friend.conversationCheck [3] && friend.suspicionLevel > 3) 
+		{
+			textFile = Resources.Load ("MK_SusLvl4") as TextAsset;
+
+			if (!conversationPasses [3]) 
+			{
+				//	At line 7 which is a "..." we start the conversation steering slider
+				if (currentLine == 9) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [0] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 10)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 11) 
+				{
+					currentLine = 14;
+				}
+				if (currentLine == 13)
+				{
+					currentLine = 14;
+				}
+
+				//	At line 21 which is a "..." we start the conversation steering slider
+				if (currentLine == 21) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [1] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 22)
+				{
+					StartCoroutine (DiableInputTimer (5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 25) 
+				{
+					currentLine = 28;
+				}
+				if (currentLine == 27) 
+				{
+					currentLine = 28;
+				}
+
+				//	At line 29 which is a "..." we start the conversation steering slider
+				if (currentLine == 29) 
+				{
+					//	We've passed conversation steering part of the conversation
+					conversationPasses [2] = true;
+
+					//	We are now steering a conversation. Make the slider appear and make it move
+					conversation.transform.localScale = m_Appear;
+					steerConversation = true;
+					conversation.GetComponent<Conversation> ().startSlider = true;
+
+					//	Start the timer
+					StartCoroutine (SteerConversationTimer (3f, currentLine));
+				}
+
+				//	Disables input for 1.5 seconds to prevent player from clicking through dialogue
+				if (currentLine == 30)
+				{
+					StartCoroutine (DiableInputTimer (1.5f));
+				}
+
+				//	This is here to make the dialouge flow smoothly after failure and success states
+				if (currentLine == 31)
+				{
+					currentLine = 34;
+				}
+				if (currentLine == 33) 
+				{
+					currentLine = 33;
+				}
+
+				//	We have passed through this conversation text file. The last line will now appear
+				if (currentLine == textLines.Length - 1) 
+				{
+					friend.conversationCheck [2] = true;
+					conversationPasses [3] = true;
+					m_GameManager.conversationCount++;
+					StartCoroutine (EndConversation(1.75f));
+				}
+			}
+			else
+			{
+				currentLine = textLines.Length - 1;
+
+				//	Makes panel appear with the "hold on I'm getting a text line"
+				textpanel.alpha = 1f;
+				textpanel.blocksRaycasts = true;
+				StartCoroutine (EndConversation(1.75f));
+			}
+			textLines = (textFile.text.Split ('\n'));
+			endAtLine = textLines.Length - 1;
+		} 
+		else
+		{
+			if (friend.conversationCheck[0])
+			{
+				textFile = Resources.Load ("MK_SusLvl1") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[1])
+			{
+				textFile = Resources.Load ("MK_SusLvl2") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[2])
+			{
+				textFile = Resources.Load ("MK_SusLvl3") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+			if (friend.conversationCheck[3])
+			{
+				textFile = Resources.Load ("MK_SusLvl4") as TextAsset;
+				if (textFile != null)
+				{
+					//	Splits text file at the "Enter" key also known as \n
+					textLines = (textFile.text.Split ('\n'));
+				}
+
+				if (endAtLine == 0)
+				{
+					//	Last line is length - 1
+					endAtLine = textLines.Length - 1;
+				}
+
+			}
+				
+			currentLine = textLines.Length - 1;
+			StartCoroutine (EndConversation(1.75f));
+
+			//	Makes panel appear with the "hold on I'm getting a text line"
+			textpanel.alpha = 1f;
+			textpanel.blocksRaycasts = true;
+
+		}
+
+		//Sets the appropriate length for each text file
+		textLines = (textFile.text.Split ('\n'));
+		endAtLine = textLines.Length - 1;
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	RestroomDialouge: Runs restroom dialouge if player frequents the restroom often		*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void RestroomDialouge()
 	{
 		//	We started a conversation
@@ -1796,7 +2054,11 @@ public class TextboxManager : MonoBehaviour
 
 	}
 
-
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	NotEating: Runs playing with food dialouge if player plays with food often			*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void NotEating()
 	{
 		//	We started a conversation
@@ -1821,32 +2083,16 @@ public class TextboxManager : MonoBehaviour
 
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Update: Called once per frame 														*/
-/*																						*/
-///*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Update: Called once per frame 														*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
 	void Update()
 	{
 		//	If input is disabled we cannot click forwards
 		if (!disableInput) 
 		{
-			//	Each click when we are not steering a conversation advances the dialouge
-			if (Input.GetMouseButtonDown (0) && !steerConversation) 
-			{
-				currentLine++;
-				if (m_FriendReference != null) 
-				{
-					LoadAndRunConversationWith (m_FriendReference);
-				}
-
-				//	Useed to make sure we don't get any Index out of bounds errors
-				if (currentLine > textLines.Length - 1) 
-				{
-					currentLine = textLines.Length - 1;
-				}
-
-			}
 			//	If we've reached the end of the text file we display the "Last line" we want to see
 			if (currentLine == textLines.Length - 1) 
 			{

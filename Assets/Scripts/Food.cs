@@ -2,17 +2,31 @@
 using UnityEngine.UI;
 using System.Collections;
 
+/*--------------------------------------------------------------------------------------*/
+/*																						*/
+/*	Food: Controls playing with food													*/
+/*		Functions:																		*/
+/*			Start ()																	*/
+/*			PlayingWithFood (float seconds)												*/
+/*			PlayWithFood ()																*/
+/*																						*/
+/*--------------------------------------------------------------------------------------*/
 public class Food : MonoBehaviour {
 
-	public bool playingWithFood;
-	public int timesPlayedWithFood;
-	public TextboxManager textboxManager;
-	public GameManager gm;
-	public PlayerController player;
-	public Animator m_Animatior;
-	private Image image;
+	//	Public Variables
+	public bool playingWithFood;				//	If this is true, player is playing with food
+	public int timesPlayedWithFood;				//	Stores how many times player played with food
+	public TextboxManager textboxManager;		//	Reference to the textboxManager
+	public GameManager gm;						//	Reference to Game Manager
+	public PlayerController player;				//	Reference to the player
+	public Animator m_Animatior;				//	Reference to food's animator
 
-	// Use this for initialization
+
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Start: Runs once at the begining of the game. Initalizes variables.					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	void Start () 
 	{
 		gm = GameObject.FindGameObjectWithTag ("GameController").GetComponent<GameManager> ();
@@ -21,13 +35,12 @@ public class Food : MonoBehaviour {
 		m_Animatior = GetComponent<Animator> ();
 		timesPlayedWithFood = 0;
 		textboxManager = GameObject.FindGameObjectWithTag ("TextManager").GetComponent<TextboxManager> ();
-		image = GetComponent<Image> ();
 	}
 
 
 	/*--------------------------------------------------------------------------------------*/
 	/*																						*/
-	/*	DisableInputTime: Disables input for x seconds										*/
+	/*	PlayingWithFood: Disables input for x seconds										*/
 	/*		param: float seconds - how many seconds the function waits for 					*/
 	/*																						*/
 	/*--------------------------------------------------------------------------------------*/
@@ -42,11 +55,14 @@ public class Food : MonoBehaviour {
 
 	}
 
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	PLayWithFood: Raises suspicion if done too many times								*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/
 	public void PlayWithFood()
 	{
 		StartCoroutine (PlayingWithFood (0.5f));
-
-		player.LowerSelfImage ();
 
 		if (timesPlayedWithFood > 3)
 		{
@@ -57,16 +73,5 @@ public class Food : MonoBehaviour {
 		{
 			gm.m_Friends [Random.Range (0, 3) % 3].GetComponent<FriendController> ().LowerSuspicion ();
 		}
-
-		Color newAlpha = new Color (image.color.r, image.color.g, image.color.b, image.color.a * 0.85f);
-
-		image.color = newAlpha;
-	}
-
-
-	// Update is called once per frame
-	void Update () 
-	{
-		
 	}
 }

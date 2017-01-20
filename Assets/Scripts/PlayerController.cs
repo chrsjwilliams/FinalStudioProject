@@ -15,7 +15,6 @@ using System.Collections;
 /*					GoToRestroom()														*/
 /*					PlayWithFood()														*/
 /*					EatFood()															*/
-/*					Update()															*/
 /*																						*/
 /*--------------------------------------------------------------------------------------*/	
 public class PlayerController : MonoBehaviour 
@@ -41,8 +40,8 @@ public class PlayerController : MonoBehaviour
 	void Start () 
 	{
 		//	Sets starting composure and self image levels
-		m_StartingComposure = 5f;
-		m_StartingSelfImage = 10f;
+		m_StartingComposure = 3f;
+		m_StartingSelfImage = 5f;
 		playerComposure = m_StartingComposure;
 		playerSelfImage = m_StartingSelfImage;
 
@@ -62,6 +61,11 @@ public class PlayerController : MonoBehaviour
 	public void LoseComposure()
 	{
 		playerComposure--;
+		if (playerComposure < 0)
+		{
+			LowerSelfImage ();
+			playerComposure = 0;
+		}
 		playerComposureBar.value = playerComposure;
 	}
 
@@ -85,15 +89,5 @@ public class PlayerController : MonoBehaviour
 	{
 		playerSelfImage--;
 		playerSelfImageBar.value = playerSelfImage;
-	}
-		
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Update: Called once per frame														*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/
-	void Update () 
-	{
-	
 	}
 }

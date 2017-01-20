@@ -19,6 +19,7 @@ public class FriendController : MonoBehaviour
 {
 	//	Public Variables
 	public bool talkingToPlayer;							//	Keeps friend highlihgted
+	public bool conversationIsOver;							//	Signals to game the conversation is over
 	public string friendName;								//	Stores string containing Friend's name
 	public float suspicionLevel;							//	Public reference to friend's suspicion level
 	public bool [] conversationCheck;						//	Logic gates to prevent the same conversation happening twice
@@ -42,8 +43,9 @@ public class FriendController : MonoBehaviour
 	{
 		talkingToPlayer = false;
 
+		conversationIsOver = true;
 		//	Ready to do the first conversation
-		conversationCheck = new bool[] { true, false, false, false, false };
+		conversationCheck = new bool[] { false, false, false, false, false };
 
 		//	Sets reference to Textbox Manager
 		textbox = GameObject.Find ("Textbox Manager").GetComponent<TextboxManager>();
@@ -60,7 +62,7 @@ public class FriendController : MonoBehaviour
 		//	Find slider for debug purposes
 		suspicionBar = GameObject.Find ("Suspicion Level").GetComponent<Slider> ();
 
-		friendIndicator = new Color (0.65f, 0.93f, 1.0f);
+		friendIndicator = new Color (1.0f, 1.0f, 1.0f);
 
 		button = GetComponent<Button> ();
 
@@ -76,11 +78,11 @@ public class FriendController : MonoBehaviour
 		player = GameObject.FindGameObjectWithTag ("Player");
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	RaiseSuspicion:	Raises friend's suspicion (0 to 3)	level 1 to 	4					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	RaiseSuspicion:	Raises friend's suspicion (0 to 3)	level 1 to 	4					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/	
 	public void RaiseSuspicion()
 	{
 		m_SuspicionLevel++;
@@ -88,11 +90,11 @@ public class FriendController : MonoBehaviour
 		suspicionBar.value = suspicionLevel;
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	LowerSuspicion:	Raises friend's suspicion (3 to 0)	level 4 to 	1					*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	LowerSuspicion:	Raises friend's suspicion (3 to 0)	level 4 to 	1					*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/	
 	public void LowerSuspicion()
 	{
 		m_SuspicionLevel--;
@@ -100,24 +102,27 @@ public class FriendController : MonoBehaviour
 		suspicionBar.value = suspicionLevel;
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	InitiateConversation: When clicked on initiates conversation logic in 				*/
-/* 						  textbox manager												*/
-/*																						*/
-/*																						*/
-/*--------------------------------------------------------------------------------------*/	
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	InitiateConversation: When clicked on initiates conversation logic in 				*/
+	/* 						  textbox manager												*/
+	/*																						*/
+	/*																						*/
+	/*--------------------------------------------------------------------------------------*/	
 	void InitiateConversation()
 	{
-		//	Loads file appropriate for this friend's name and susupicion level
-		textbox.LoadAndRunConversationWith (this);
+		if (conversationIsOver) 
+		{
+			//	Loads file appropriate for this friend's name and susupicion level
+			textbox.LoadAndRunConversationWith (this);
+		}
 	}
 
-/*--------------------------------------------------------------------------------------*/
-/*																						*/
-/*	Update: Called once per frame (Will be used for visual fx)							*/
-/*																						*/
-///*--------------------------------------------------------------------------------------*/
+	/*--------------------------------------------------------------------------------------*/
+	/*																						*/
+	/*	Update: Called once per frame (Will be used for visual fx)							*/
+	/*																						*/
+	///*--------------------------------------------------------------------------------------*/
 	void Update () 
 	{
 		if (talkingToPlayer)
@@ -125,6 +130,10 @@ public class FriendController : MonoBehaviour
 			buttonColor = button.colors;
 			buttonColor.normalColor = friendIndicator;
 			button.colors = buttonColor;
+			if (Input.GetMouseButtonDown (0)) 
+			{
+				//textbox.LoadAndRunConversationWith (this);
+			}
 		}
 	}
 }
